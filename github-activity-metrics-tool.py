@@ -8,7 +8,6 @@ from dateutil.relativedelta import relativedelta
 
 
 
-
 if not os.path.isdir("outputs/" + datetime.now().strftime("%Y-%m-%d")):
     os.mkdir("outputs/" + datetime.now().strftime("%Y-%m-%d"))
 
@@ -29,17 +28,24 @@ config['githubrepodetailscsvpath'] = config['githubrepodetailscsvpath'].replace(
 
 # update this list of queries to fit your institution
 querylist = []
-querylist.append("ut+austin+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
-querylist.append("university+of+texas+at+austin+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
-querylist.append("location:%22university+of+texas+at+austin%22&followers:>=" + str(config['minimumfollowers']) + "&repos:>=" + str(config['minimumrepos']))
-querylist.append("location:\"ut+austin\"&followers:>=" + str(config['minimumfollowers']) + "&repos:>=" + str(config['minimumrepos']))
-querylist.append("location%3AAustin+followers%3A%3E%3D40+repos%3A%3E%3D1&type=Users&ref=advsearch&l=&l=&s=followers&o=desc")
-querylist.append("texas+advanced+computing+center+in:bio&type=Users")
+#querylist.append("syracuse+university+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
+#querylist.append("syracuse+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
+#querylist.append("su+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
+#querylist.append("'cuse+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
+#querylist.append("orange+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']))
+#querylist.append("location%3ASyracuse+followers%3A%3E%3D" + str(config['minimumfollowers']) +"+repos%3A%3E%3D" + str(config['minimumrepos']) + "&type=Users&ref=advsearch&l=&l=&s=followers&o=desc")
+
+querylist.append("location:%22syracuse+university%22+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']) + "&type=Users")
+querylist.append("location:%22syracuse%22+followers:>=" + str(config['minimumfollowers'] + 1) + "+repos:>=" + str(config['minimumrepos']) + "&type=Users")
+querylist.append("location:%22syracuse%22+followers:" + str(config['minimumfollowers']) + "" + "+repos:>=" + str(config['minimumrepos']) + "&type=Users")
+querylist.append("syracuse+university+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']) + "&type=Users")
+querylist.append("syracuse+followers:>=" + str(config['minimumfollowers']) + "+repos:>=" + str(config['minimumrepos']) + "&type=Users")
 
 
 
 githubaccountdetailscsvcolumns = []
-# if config['detaillevel'] == "fulldetail":
+if config['detaillevel'] == "fulldetail":
+    detaillevel = "fulldetail";
 githubaccountdetailscsvcolumns.append("name")
 githubaccountdetailscsvcolumns.append("html_url")
 githubaccountdetailscsvcolumns.append("company")
@@ -157,7 +163,7 @@ for query in querylist:
 
         response = json.loads(data.content)
 
-        print(response)
+        print("total count for query '" + query + "' = " + str(response['total_count']))
 
         try:
             responselinkheaders = data.headers["Link"]
@@ -167,17 +173,17 @@ for query in querylist:
             lasturl = pageinfo[1].replace("<","").split(">; ")[0].strip()
             lastpagenum = lasturl.split("=")[-1]
 
-            print("total count for query '" + query + "' = " + str(response['total_count']))
             print("next page = " + nexturl)
             print("lastpage = " + lasturl)
             print()
 
         except:
             print("less than one page of results returned")
+            lastpagenum = 1
 
         pagecount = 0
 
-        while pagecount < config['pagelimit']:
+        while pagecount < min(config['pagelimit'], int(lastpagenum)):
 
             try:
                 pagecount += 1
@@ -266,7 +272,7 @@ for query in querylist:
                                             try:
                                                 if k2 == "name":
                                                     v2 = v2.title().replace("\n","")
-                                                    csvrowdictionary[k2] = v2
+                                                    csvrowdictionary[k2] = v2.encode('ascii', 'ignore').decode()
 
                                                 elif k2 == "created_at" or k2 == "updated_at":
                                                     v2 = v2.split("T")[0].replace("\n","")
@@ -275,7 +281,7 @@ for query in querylist:
                                                 elif k2 == "company":
                                                     if config['detaillevel'] == "fulldetail":
                                                         v2 = v2.replace("@","").replace("\n","")
-                                                        csvrowdictionary[k2] = v2
+                                                        csvrowdictionary[k2] = v2.encode('ascii', 'ignore').decode()
                                                     else:
                                                         csvrowdictionary[k2] = ""
 
@@ -295,25 +301,25 @@ for query in querylist:
                                                 elif k2 == "bio":
 
                                                     institutionrole = ""
-                                                    if " at university of" in v2.lower():
-                                                        institutionrole = v2.lower().split(" at university of")[0]
-                                                    elif " at the university of" in v2.lower():
-                                                        institutionrole = v2.lower().split(" at the university of")[0]
-                                                    elif " at ut" in v2.lower():
-                                                        institutionrole = v2.lower().split(" at ut")[0]
+                                                    if " at syracuse university" in v2.lower():
+                                                        institutionrole = v2.lower().split(" at syracuse university")[0]
+                                                    elif " at su" in v2.lower():
+                                                        institutionrole = v2.lower().split(" at su")[0]
                                                     elif "@" in v2.lower():
                                                         institutionrole = v2.lower().split("@")[0].strip()
-                                                    elif ", the university of" in v2.lower():
-                                                        institutionrole = v2.lower().split(", the university of")[0]
-                                                    elif "- university of" in v2.lower():
-                                                        institutionrole = v2.lower().split("- university of")[0]
+                                                    elif ", syracuse university" in v2.lower():
+                                                        institutionrole = v2.lower().split(", syracuse university")[0]
+                                                    elif "- syracuse university" in v2.lower():
+                                                        institutionrole = v2.lower().split("- syracuse university")[0]
+                                                    elif "syracuse university" in v2.lower():
+                                                        institutionrole = v2.lower().split("syracuse university")[0]
                                                     else:
                                                         pass
 
                                                     institutionrole.replace("i am a ","")
 
                                                     if config['detaillevel'] == "fulldetail":
-                                                        csvrowdictionary["bio"] = v2
+                                                        csvrowdictionary["bio"] = v2.encode('ascii', 'ignore').decode()
                                                     else:
                                                         csvrowdictionary["bio"] = ""
 
@@ -323,9 +329,10 @@ for query in querylist:
                                                         csvrowdictionary["additional predicted info"] = ""
 
                                                     else:
-                                                        csvrowdictionary["predicted general "+ config['institutionname'] +" connection/role"] = predictrole(institutionrole, v2.lower())[0]
-                                                        csvrowdictionary["additional predicted info"] = predictrole(institutionrole, v2.lower())[1]
-                                                        csvrow.extend(predictrole(institutionrole, v2.lower()))
+                                                        predictedrole = predictrole(institutionrole, v2.lower())
+                                                        csvrowdictionary["predicted general "+ config['institutionname'] +" connection/role"] = predictedrole[0]
+                                                        csvrowdictionary["additional predicted info"] = predictedrole[1]
+                                                        csvrow.extend(predictedrole)
 
                                                 else:
                                                     csvrowdictionary[k2] = v2
@@ -337,7 +344,7 @@ for query in querylist:
                                         if k in usercharacteristicstoprocess or "*" in usercharacteristicstoprocess:
                                             print("   " + k2 + ": " + str(v2))
 
-                                            if k2 == "repos_url":
+                                            if k2 == "repos_url" and config['collectrepos'] == "true":
                                                 try:
                                                     reposqueryurl = v2
                                                     reposdata = requests.get(reposqueryurl, headers={"X-GitHub-Api-Version": "2022-11-28", "Authorization": "Bearer " + config['githubtoken'], "Accept": "application/vnd.github+json" })
@@ -519,37 +526,37 @@ with open(config['githubaccountdetailscsvpath'],"w", newline="") as opencsv:
                 print("row #" + str(i) + " written successfully")
 
         except Exception as e:
-            print("ERROR: " + str(e))
+            print("ERROR: (" + str(i) + ") " + str(e))
 
 
 
-print("\n\n" + "preparing to generate " + config['githubrepodetailscsvpath'])
-print("estimated valid rows to create in GitHub repo details CSV: " + str(len(finalgithubrepodetailscsvrows)))
+if config['collectrepos'] == "true":
+    print("\n\n" + "preparing to generate " + config['githubrepodetailscsvpath'])
+    print("estimated valid rows to create in GitHub repo details CSV: " + str(len(finalgithubrepodetailscsvrows)))
+    topstarredrepos = []
+    topwatchedrepos = []
+    topforkedrepos = []
 
-topstarredrepos = []
-topwatchedrepos = []
-topforkedrepos = []
+    with open(config['githubrepodetailscsvpath'],"w", newline="") as opencsv:
 
-with open(config['githubrepodetailscsvpath'],"w", newline="") as opencsv:
+        csvwriter = csv.writer(opencsv)
 
-    csvwriter = csv.writer(opencsv)
+        csvwriter.writerow(githubrepodetailscsvcolumns)
 
-    csvwriter.writerow(githubrepodetailscsvcolumns)
+        for i, csvrow in enumerate(finalgithubrepodetailscsvrows):
 
-    for i, csvrow in enumerate(finalgithubrepodetailscsvrows):
+            try:
+                csvwriter.writerow(csvrow)
 
-        try:
-            csvwriter.writerow(csvrow)
+                stargazercount = csvrow[8]
+                watchercount = csvrow[9]
+                forkcount = csvrow[11]
 
-            stargazercount = csvrow[8]
-            watchercount = csvrow[9]
-            forkcount = csvrow[11]
+                if i%10 == 0:
+                    print("row #" + str(i) + " written successfully")
 
-            if i%10 == 0:
-                print("row #" + str(i) + " written successfully")
-
-        except Exception as e:
-            print("ERROR: " + str(e))
+            except Exception as e:
+                print("ERROR: " + str(e))
 
 
 
@@ -563,33 +570,35 @@ print("\n\nNumber of overlapping users across queries: " + str(len(overlappingus
 
 
 print("\n\n")
-print("Programming language statistics:")
-languagecountlist = []
 
-for language in set(repolanguagelist):
-    languagecountlist.append(repolanguagelist.count(language))
+if config['collectrepos'] == "true":
+    print("Programming language statistics:")
+    languagecountlist = []
 
-for i in reversed(range(max(languagecountlist) + 1)):
     for language in set(repolanguagelist):
-        try:
-            if repolanguagelist.count(language) == i and i >= 5:
-                print("   " + str(repolanguagelist.count(language)) + (" " * (7-len(str(repolanguagelist.count(language))))) + language)
-        except Exception as e:
-            pass
+        languagecountlist.append(repolanguagelist.count(language))
+
+    for i in reversed(range(max(languagecountlist) + 1)):
+        for language in set(repolanguagelist):
+            try:
+                if repolanguagelist.count(language) == i and i >= 5:
+                    print("   " + str(repolanguagelist.count(language)) + (" " * (7-len(str(repolanguagelist.count(language))))) + language)
+            except Exception as e:
+                pass
 
 
-print("\n\n")
-print("License statistics:")
-licensecountlist = []
+    print("\n\n")
+    print("License statistics:")
+    licensecountlist = []
 
-for license in set(repolicenselist):
-    licensecountlist.append(repolicenselist.count(license))
-
-for i in reversed(range(max(licensecountlist) + 1)):
     for license in set(repolicenselist):
-        try:
-            if repolicenselist.count(license) == i:
-                print("   " + str(repolicenselist.count(license)) + (" " * (7-len(str(repolanguagelist.count(language))))) + license)
+        licensecountlist.append(repolicenselist.count(license))
 
-        except Exception as e:
-            print(str(e))
+    for i in reversed(range(max(licensecountlist) + 1)):
+        for license in set(repolicenselist):
+            try:
+                if repolicenselist.count(license) == i:
+                    print("   " + str(repolicenselist.count(license)) + (" " * (7-len(str(repolanguagelist.count(language))))) + license)
+
+            except Exception as e:
+                print(str(e))
